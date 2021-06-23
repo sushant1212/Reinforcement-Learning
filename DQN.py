@@ -116,6 +116,5 @@ if __name__ == "__main__":
             agent.env.render()
         print(f"Number of Episodes : {i+1}   Total reward = {agent.total_reward}" )
         agent.total_reward = 0
-        if i > 100:
-            EPSILON = 0.01
+        EPSILON -= 0.1*EPSILON
         
