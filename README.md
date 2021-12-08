@@ -7,4 +7,5 @@
 		<li> Monte carlo and sarsa(lambda) control for easy21 environment (assignment from David Silver's Course)
 		<li> DQN on cartpole environment
 		<li> Policy Gradient on Lunar Lander Environment
+		<li> DDPG on Inverted pendulum environment
 	</ul>
