@@ -54,15 +54,17 @@ class ExperienceReplay:
     def __len__(self):
         return len(self.list)
 
-    def sample_batch(self, batch_size:int, observation_size:int, action_size:int):
-        data = np.array(random.sample(self.list, batch_size))
-        curr_state = data[:,0:observation_size]
-        reward = data[:,observation_size].reshape(-1, 1)
-        action = data[:,observation_size+1].reshape(-1,1)
-        next_state = data[:,observation_size+2: 2*observation_size+2]
-        done = data[:,-1].reshape(-1,1)
-
-        return (curr_state, reward, action, next_state, done)
+    def sample_batch(self, batch_size:int):
+        sample = random.sample(self.list, batch_size)
+        current_state, reward, action, next_state, done = zip(*sample)
+        
+        current_state = np.array(current_state)
+        reward = np.array(reward).reshape(-1, 1)
+        action = np.array(action).reshape(-1, 1)
+        next_state = np.array(next_state)
+        done = np.array(done).reshape(-1, 1)
+        
+        return current_state, reward, action, next_state, done 
 
 class DQN(nn.Module):
     def __init__(self, input_layer_size:int, hidden_layers:list):
@@ -210,17 +212,13 @@ class DQNAgent:
                     has_reached_goal = True
 
                 # storing the current state transition in the replay buffer. 
-                arr = current_state.copy()
-                arr = np.concatenate((arr, np.array([reward], dtype=np.float32)))
-                arr = np.concatenate((arr, np.array([action_discrete], dtype=np.float32)))
-                arr = np.concatenate((arr, next_obs))
-                arr = np.concatenate((arr, np.array([done], dtype=np.float32)))
-                self.experience_replay.insert(arr)
+                self.experience_replay.insert((current_state, reward, action_discrete, next_obs, done))
+
 
 
                 if len(self.experience_replay) > batch_size:
                     # sampling mini-batch from experience replay
-                    curr_state, rew, act, next_state, d = self.experience_replay.sample_batch(batch_size, self.env.observation_space.shape[0], 1)
+                    curr_state, rew, act, next_state, d = self.experience_replay.sample_batch(batch_size)
                     fixed_target_value = torch.max(self.fixed_targets(torch.from_numpy(next_state).float().to(device)), dim=1, keepdim=True).values
                     fixed_target_value = fixed_target_value * (~torch.from_numpy(d).bool().to(device))
                     target = torch.from_numpy(rew).float().to(device) + gamma*fixed_target_value
