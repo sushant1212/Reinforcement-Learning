@@ -14,7 +14,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # hparams
 BUFFER_SIZE = 2000
-UPDATE_FREQ = 10
+POLYAK_CONSTANT = 0.95
 NUM_EPISODES = 5000
 EPSILON = 0.5
 BATCH_SIZE = 64
@@ -87,9 +87,16 @@ class DuelingDQNAgent:
     def __init__(self, input_size, hidden_layers:list, v_net_layers:list, a_net_layers:list, max_capacity:int) -> None:
         self.env = gym.make("CartPole-v1")
         self.duelingDQN = DuelingDQN(input_size, hidden_layers, v_net_layers, a_net_layers).to(device)
+        self.duelingDQN.apply(self.xavier_init_weights)
         self.fixed_targets = DuelingDQN(input_size, hidden_layers, v_net_layers, a_net_layers).to(device)
+        self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
         self.experience_replay = ExperienceReplay(max_capacity)
         self.steps = 0
+
+    def xavier_init_weights(self, m):
+        if type(m) == nn.Linear:
+            nn.init.xavier_uniform_(m.weight)
+        
 
     def preprocess_observation(self, obs, MAX_OBSERVATION_LENGTH):
         zer = np.zeros(MAX_OBSERVATION_LENGTH-obs.shape[0])
@@ -149,7 +156,7 @@ class DuelingDQNAgent:
         batch_size=BATCH_SIZE,
         gamma=GAMMA,
         lr = LR,
-        update_freq=UPDATE_FREQ,
+        polyak_const=POLYAK_CONSTANT,
         render=False,
         save_path = "./models/duelingdqn",
         render_freq = 500,
@@ -232,8 +239,11 @@ class DuelingDQNAgent:
                 # setting the current observation to the next observation
                 current_obs = next_obs
 
-                if self.steps % update_freq == 0:
-                    self.fixed_targets.load_state_dict(self.duelingDQN.state_dict())
+                # updating the fixed targets using polyak update
+                with torch.no_grad():
+                    for p_target, p in zip(self.fixed_targets.parameters(), self.duelingDQN.parameters()):
+                        p_target.data.mul_(polyak_const)
+                        p_target.data.add_((1 - polyak_const) * p.data)
 
 
                 # total_grad_norm += self.calculate_grad_norm()
