@@ -19,8 +19,8 @@ BUFFER_SIZE = 2000
 BATCH_SIZE = 64
 GAMMA = 0.99
 NUM_EPISODES = 1000
-EPSILON = 0.4
-UPDATE_FREQ = 10
+EPSILON = 0.5
+POLYAK_CONSTANT = 0.95
 ##################################
 
 class MLP(nn.Module):
@@ -154,7 +154,7 @@ class DQNAgent:
         batch_size=BATCH_SIZE,
         gamma=GAMMA,
         lr = LR,
-        update_freq=UPDATE_FREQ,
+        polyak_const=POLYAK_CONSTANT,
         render=False,
         save_path = "./models/dqn",
         render_freq = 500,
@@ -240,9 +240,11 @@ class DQNAgent:
                 # setting the current observation to the next observation for the next step
                 current_state = next_obs
 
-                # updating the fixed targets
-                if self.steps % update_freq == 0:
-                    self.fixed_targets.load_state_dict(self.model.state_dict())
+                # updating the fixed targets using polyak update
+                with torch.no_grad():
+                    for p_target, p in zip(self.fixed_targets.parameters(), self.model.parameters()):
+                        p_target.data.mul_(polyak_const)
+                        p_target.data.add_((1 - polyak_const) * p.data)
             
             total_reward += episode_reward
 
