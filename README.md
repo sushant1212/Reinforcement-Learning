@@ -8,6 +8,7 @@
 		<li> DQN on cartpole environment
 		<li> Policy Gradient on Lunar Lander Environment
 		<li> DDPG on Inverted pendulum environment
+		<li> Dueling DQN on Cartpole env
 	</ul>
 
 
