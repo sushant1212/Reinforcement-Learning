@@ -82,9 +82,14 @@ class DQNAgent:
         
         # declaring the network
         self.model = DQN(input_size, hidden_layers).to(device)
+        # initializing weights using xavier initialization
+        self.model.apply(self.xavier_init_weights)
+
         
         #initializing the fixed targets
         self.fixed_targets = DQN(input_size, hidden_layers).to(device)
+        self.fixed_targets.load_state_dict(self.model.state_dict())
+        
 
         # initalizing the replay buffer
         self.experience_replay = ExperienceReplay(int(max_capacity))
@@ -96,6 +101,10 @@ class DQNAgent:
         self.loss_fn = nn.MSELoss()
         self.gamma = GAMMA
         self.total_reward = 0
+
+    def xavier_init_weights(self, m):
+        if type(m) == nn.Linear:
+            nn.init.xavier_uniform_(m.weight)
 
     def preprocess_observation(self, obs, MAX_OBSERVATION_LENGTH):
         """
