@@ -9,7 +9,6 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 import numpy as np
-from optim_env import OptimEnv
 from collections import deque
 # torch.autograd.set_detect_anomaly(True)
 import gym
@@ -102,7 +101,7 @@ class Agent:
 
     def __init__(self) -> None:
         # Initializing the environment
-        self.env = gym.make('Pendulum-v0')
+        self.env = gym.make('Pendulum-v1')
         self.obs_dim = self.env.observation_space.shape[0]
         self.act_dim = self.env.action_space.shape[0]
         self.act_max = self.env.action_space.high[0]
